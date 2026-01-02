@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>A Jornada - André & Você</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary: #00d4ff;
+      --error: #ff4d4d;
+      --glass: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+    body {
+      background: #050508;
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      perspective: 1000px;
+    }
+
+    /* ESTRELAS DINÂMICAS */
+    #bg {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at center, #10101a 0%, #050508 100%);
+      z-index: -1;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.5;
+      animation: sparkle var(--d) infinite ease-in-out;
+    }
+
+    @keyframes sparkle { 0%, 100% { opacity: 0.2; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.5); } }
+
+    /* BARRA DE PROGRESSO NEON */
+    .progress-container {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 4px;
+      background: rgba(255, 255, 255, 0.05); z-index: 1000;
+    }
+    .progress-bar {
+      height: 100%; background: linear-gradient(90deg, var(--primary), #0044ff);
+      width: 0%; transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 0 15px var(--primary);
+    }
+
+    /* CONTAINER DAS TELAS */
+    .tela {
+      display: none;
+      max-width: 650px;
+      width: 90%;
+      padding: 40px;
+      background: var(--glass);
+      backdrop-filter: blur(15px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      text-align: center;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+      animation: enter 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .ativa { display: block; }
+
+    @keyframes enter {
+      from { opacity: 0; transform: scale(0.85) rotateX(-10deg); }
+      to { opacity: 1; transform: scale(1) rotateX(0); }
+    }
+
+    h1 { font-size: 2.2rem; margin-bottom: 20px; letter-spacing: -1px; }
+    h2 { font-size: 1.4rem; color: var(--primary); margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+    p { font-size: 1.15rem; line-height: 1.7; color: #e0e0e0; margin-bottom: 25px; }
+
+    /* BOTÕES */
+    .botoes { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    button {
+      background: #ffffff; color: #000; border: none;
+      padding: 16px 35px; font-size: 1rem; font-weight: 700;
+      border-radius: 50px; cursor: pointer; transition: all 0.3s;
+    }
+    button:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3); background: var(--primary); color: white; }
+    .btn-voltar { background: transparent; color: #666; font-size: 0.8rem; border: 1px solid #333; padding: 8px 20px; }
+
+    /* ÁREA DA CARTA */
+    .lock-wrapper {
+      position: relative; height: 160px;
+      display: flex; align-items: center; justify-content: center; margin: 20px 0;
+    }
+    .envelope-visual {
+      width: 140px; height: 90px; background: #1a1a2a; border: 2px solid #333;
+      border-radius: 12px; position: relative; transition: all 0.6s; filter: grayscale(1) opacity(0.3);
+    }
+    .envelope-visual::after {
+      content: ''; position: absolute; top: 0; left: 0; width: 0; height: 0;
+      border-style: solid; border-width: 45px 70px 0 70px; border-color: #2a2a3a transparent transparent transparent;
+    }
+    .envelope-visual.unlocked {
+      filter: grayscale(0) opacity(1); border-color: var(--primary);
+      box-shadow: 0 0 40px rgba(0, 212, 255, 0.5); cursor: pointer; animation: float 2s infinite ease-in-out;
+    }
+    .lock-icon { position: absolute; font-size: 50px; z-index: 5; transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    .shake { animation: shake 0.5s both; }
+    @keyframes shake { 10%, 90% { transform: translate3d(-2px, 0, 0); } 20%, 80% { transform: translate3d(4px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-6px, 0, 0); } 40%, 60% { transform: translate3d(6px, 0, 0); } }
+
+    input {
+      width: 100%; background: rgba(255,255,255,0.05); border: 1px solid #333;
+      padding: 16px; border-radius: 14px; color: white; text-align: center; outline: none; transition: 0.3s; margin-bottom: 15px;
+    }
+    input:focus { border-color: var(--primary); }
+    .error-text { color: var(--error); font-size: 0.9rem; margin-bottom: 15px; display: none; font-style: italic; }
+  </style>
+</head>
+<body>
+
+  <div id="bg"></div>
+  <div class="progress-container"><div class="progress-bar" id="myBar"></div></div>
+
+  <div class="tela ativa" id="tela0">
+    <h1>A Jornada da Nossa Amizade</h1>
+    <p style="font-style: italic; opacity: 0.8;">Histórias reais, exageradas do jeito certo e contadas por quem viveu tudo.</p>
+    <button onclick="proxima(1)">▶ APERTAR START</button>
+  </div>
+
+  <div class="tela" id="tela1">
+    <p>André, isso aqui é basicamente eu lembrando de tudo que a gente viveu, aumentando um pouco as histórias e falando como amigo fala.<br><br>Se prepara.</p>
+    <div class="botoes"><button onclick="proxima(2)">COMEÇAR</button><button class="btn-voltar" onclick="voltar()">VOLTAR</button></div>
+  </div>
+
+  <div class="tela" id="tela2">
+    <h2>CAPÍTULO 1 — A CHEGADA</h2>
+    <p>Pandemia, escola estranha, todo mundo meio perdido. Aí aparece você. Um livro na mão, máscara no rosto, tímido num nível absurdo. A gente oferece tereré. Você recusa. E mal eu sabia que aquele cara ia virar meu irmão depois de 3 anos.</p>
+    <div class="botoes"><button onclick="proxima(3)">CONTINUAR</button><button class="btn-voltar" onclick="voltar()">VOLTAR</button></div>
+  </div>
+
+  <div class="tela" id="tela3">
+    <h2>CAPÍTULO 2 — AS CONVERSAS</h2>
+    <p>Se teve algo que segurou tudo, foram as conversas. Sempre que eu precisava de conselho, de alguém pra ouvir, era você. Às vezes meio ignorante, não vou mentir. Mas sempre presente.</p>
+    <div class="botoes"><button onclick="proxima(4)">AVANÇAR</button><button class="btn-voltar" onclick="voltar()">VOLTAR</button></div>
+  </div>
+
+  <div class="tela" id="tela4">
+    <p>E quando era você que precisava? Problema em casa, menina nova, menina antiga voltando, print chegando do nada. A gente ficava horas falando do mesmo assunto, como se fosse resolver tudo. Às vezes resolvia.</p>
+    <div class="botoes"><button onclick="proxima(5)">CONTINUAR</button><button class="btn-voltar" onclick="voltar()">VOLTAR</button></div>
+  </div>
+
+  <div class="tela" id="tela5">
+    <h2>CAPÍTULO 3 — O PLANO</h2>
+    <p>Agora vem a parte séria. Você fez algo que pouca gente faz: se importou de verdade comigo. Conseguiu juntar eu e ela.</p>
+    <div class="botoes"><button onclick="proxima(6)">CONTINUAR</button><button class="btn-voltar" onclick="voltar()">VOLTAR</button></div>
+  </div>
+
+  <div class="tela" id="tela6">
+    <p>Se você ainda não entendeu, eu tô falando da Emily. Planejou viagem um mês antes, só pra eu sentar do lado dela e ver se rolava algo. E rolou.</p>
+    <div class="botoes"><button onclick="proxima(7)">AVANÇAR</button><button class="btn-voltar" onclick="voltar()">VOLTAR</button></div>
+  </div>
+
+  <div class="tela" id="tela7">
+    <h2>CAPÍTULO 4 — AS LIGAÇÕES</h2>
+    <p>Como esquecer nossas ligações falando de mulher e de foto pra postar. Você sempre insistindo pra eu tirar foto. E eu sempre inventando desculpa. Clássico.</p>
+    <div class="botoes"><button onclick="proxima(8)">CONTINUAR</button><button class="btn-voltar" onclick="voltar()">VOLTAR</button></div>
+  </div>
+
+  <div class="tela" id="tela8">
+    <h2>CAPÍTULO 5 — OS 4 É PAR</h2>
+    <p>Lembra nossos 4 é par? Um mais incrível que o outro. Quando a gente combinava de fechar um… dava errado. Quando não combinava, dava super certo.</p>
+    <div class="botoes"><button onclick="proxima(9)">AVANÇAR</button><button class="btn-voltar" onclick="voltar()">VOLTAR</button></div>
+  </div>
+
+  <div class="tela" id="tela9">
+    <h2>CAPÍTULO 6 — O CINEMA</h2>
+    <p>E o dia do cinema? Eu neurótico com o presente da Emily e você montando o plano comigo, pedindo pra guardarem lugar enquanto a gente ia comprar algo. Onze horas da noite. Você gravando áudio de 1 minuto pra me ajudar. Você é foda.</p>
+    <div class="botoes"><button onclick="proxima(10)">CONTINUAR</button><button class="btn-voltar" onclick="voltar()">VOLTAR</button></div>
+  </div>
+
+  <div class="tela" id="tela10">
+    <h2>O Vínculo Final</h2>
+    <p class="pergunta-italico" style="font-style: italic; color: #aaa;">"Depois de tudo que a gente já passou, você me considera seu melhor amigo ou seu irmão?"</p>
+
+    <div class="lock-wrapper">
+      <div id="mainLock" class="lock-icon">🔒</div>
+      <div id="mainEnvelope" class="envelope-visual" onclick="revelarMensagem()"></div>
+    </div>
+
+    <div id="unlock-ui">
+      <input type="text" id="passInput" placeholder="Sua resposta..." onkeypress="handleKey(event)">
+      <p id="errorHint" class="error-text">vc não me considera seu irmão?</p>
+      <button onclick="checkUnlock()">DESBLOQUEAR</button>
+    </div>
+
+    <div id="final-instruction" style="display:none; color: var(--primary); font-weight: bold; animation: sparkle 1s infinite;">
+      ACESSO LIBERADO. CLIQUE NA CARTA.
+    </div>
+  </div>
+
+  <div class="tela" id="tela11">
+    <h2>ANTES DO FINAL</h2>
+    <p>Você é uma das minhas maiores inspirações. Quero sempre ver o melhor de você e te ver conquistando tudo. E tudo que você conquistar, pode ter certeza: eu vou ser o primeiro a te dar os parabéns e o primeiro a te ajudar a chegar lá.</p>
+    <p>Obrigado por caminhar junto, irmãozinho. Conta comigo sempre.</p>
+    <button onclick="location.reload()">🔁 REVER JORNADA</button>
+  </div>
+
+  <script>
+    let atual = 0;
+    const totalTelas = 11;
+
+    function initStars() {
+      const bg = document.getElementById('bg');
+      for(let i=0; i<100; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = Math.random() * 100 + '%';
+        star.style.top = Math.random() * 100 + '%';
+        const size = Math.random() * 2 + 1 + 'px';
+        star.style.width = size; star.style.height = size;
+        star.style.setProperty('--d', Math.random() * 3 + 2 + 's');
+        bg.appendChild(star);
+      }
+    }
+
+    function mostrar(num) {
+      document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
+      document.getElementById('tela' + num).classList.add('ativa');
+      atual = num;
+      document.getElementById('myBar').style.width = (num / totalTelas * 100) + "%";
+    }
+
+    function proxima(num) { mostrar(num); }
+    function voltar() { if (atual > 0) mostrar(atual - 1); }
+    function handleKey(e) { if(e.key === 'Enter') checkUnlock(); }
+
+    function checkUnlock() {
+      const val = document.getElementById('passInput').value.toLowerCase();
+      const lock = document.getElementById('mainLock');
+      const hint = document.getElementById('errorHint');
+
+      if(val.includes('irmão') || val.includes('irmao')) {
+        lock.style.transform = 'translate(-50%, -150%) scale(0)';
+        lock.style.opacity = '0';
+        document.getElementById('unlock-ui').style.display = 'none';
+        document.getElementById('mainEnvelope').classList.add('unlocked');
+        document.getElementById('final-instruction').style.display = 'block';
+      } else {
+        lock.classList.add('shake');
+        document.getElementById('passInput').classList.add('shake');
+        hint.style.display = 'block';
+        setTimeout(() => {
+          lock.classList.remove('shake');
+          document.getElementById('passInput').classList.remove('shake');
+        }, 500);
+      }
+    }
+
+    function revelarMensagem() {
+      if(document.getElementById('mainEnvelope').classList.contains('unlocked')) {
+        mostrar(11);
+      }
+    }
+
+    initStars();
+  </script>
+</body>
+</html>
